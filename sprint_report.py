@@ -154,17 +154,17 @@ def print_issues_table(issues: list[Issue], title: str):
         return
     
     total_sp = sum_story_points(issues)
-    print(f"\n  {title} ({len(issues)} задач, {total_sp} SP):")
+    print(f"\n  {title} ({len(issues)} задач, {total_sp:.2f} SP):")
     print(f"  {'─'*70}")
-    print(f"  {'Задача':<12} {'SP':>5}  {'Название':<50}")
+    print(f"  {'Задача':<12} {'SP':>6}  {'Название':<50}")
     print(f"  {'─'*70}")
     
     for issue in sorted(issues, key=lambda x: x.key):
         summary = issue.summary[:47] + "..." if len(issue.summary) > 50 else issue.summary
-        print(f"  {issue.key:<12} {issue.story_points:>5.1f}  {summary:<50}")
+        print(f"  {issue.key:<12} {issue.story_points:>6.2f}  {summary:<50}")
     
     print(f"  {'─'*70}")
-    print(f"  {'ИТОГО':<12} {total_sp:>5.1f}")
+    print(f"  {'ИТОГО':<12} {total_sp:>6.2f}")
 
 
 def print_report(stats_by_developer: dict[str, DeveloperStats], target_sprint: Sprint):
@@ -221,11 +221,11 @@ def print_report(stats_by_developer: dict[str, DeveloperStats], target_sprint: S
     print(f"{'='*80}")
     print(f"  {'Категория':<50} {'SP':>10}")
     print(f"  {'-'*60}")
-    print(f"  {'Планировались (original)':<50} {team_original_sp:>10.1f}")
-    print(f"  {'Не планировались (added_later)':<50} {team_added_later_sp:>10.1f}")
-    print(f"  {'Переехали из предыдущих спринтов (carried_over)':<50} {team_carried_over_sp:>10.1f}")
-    print(f"  {'Планировались и закрыты (closed_planned)':<50} {team_closed_planned_sp:>10.1f}")
-    print(f"  {'Не планировались, но закрыты (closed_unplanned)':<50} {team_closed_unplanned_sp:>10.1f}")
+    print(f"  {'Планировались (original)':<50} {team_original_sp:>10.2f}")
+    print(f"  {'Не планировались (added_later)':<50} {team_added_later_sp:>10.2f}")
+    print(f"  {'Переехали из предыдущих спринтов (carried_over)':<50} {team_carried_over_sp:>10.2f}")
+    print(f"  {'Планировались и закрыты (closed_planned)':<50} {team_closed_planned_sp:>10.2f}")
+    print(f"  {'Не планировались, но закрыты (closed_unplanned)':<50} {team_closed_unplanned_sp:>10.2f}")
     print(f"  {'-'*60}")
 
 
@@ -244,6 +244,7 @@ def build_report(sprint_id: int):
     
     print(f"Целевой спринт: {target_sprint.name} (ID: {target_sprint.id})")
     print(f"Период: {target_sprint.start_date} - {target_sprint.end_date}")
+    print(f"Активирован: {target_sprint.activated_date}")
     
     # Получаем имена настоящих спринтов для анализа carried_over
     real_sprint_names = get_real_sprint_names()
@@ -254,10 +255,11 @@ def build_report(sprint_id: int):
     print(f"Получено задач: {len(issues)}")
     
     print("\nКатегоризация задач...")
+    # Используем activated_date как момент старта спринта
     stats = categorize_issues(
         issues,
         target_sprint.name,
-        target_sprint.start_date,
+        target_sprint.activated_date,
         target_sprint.end_date,
         real_sprint_names
     )
