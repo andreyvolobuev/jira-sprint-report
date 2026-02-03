@@ -2,15 +2,23 @@
 Общие функции для работы с Jira API
 """
 
+import os
+import sys
 import requests
 from datetime import datetime
 from dataclasses import dataclass, field
 
 # Конфигурация
 BASE_URL = "https://jira.2gis.ru"
-TOKEN = "MTA5MDAxNTc2MjgxOjD+AK/wJOqT7qwpycMM8mpGKYT1"
 BOARD_ID = 803  # Добыча данных
 STORY_POINTS_FIELD = "customfield_10080"
+
+# Токен из переменной окружения
+TOKEN = os.environ.get("JIRA_TOKEN")
+if not TOKEN:
+    print("Ошибка: переменная окружения JIRA_TOKEN не установлена")
+    print("Установите: export JIRA_TOKEN='ваш_токен'")
+    sys.exit(1)
 
 HEADERS = {
     "Accept": "application/json",
