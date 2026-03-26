@@ -36,6 +36,8 @@ class Issue:
     assignee: str
     assignee_key: str
     created: datetime
+    time_estimate: int  # Original estimate в секундах
+    time_spent: int  # Time spent в секундах
     changelog: list = field(default_factory=list)
 
 
@@ -169,7 +171,7 @@ def get_sprint_issues_with_changelog(sprint_id: int) -> list[Issue]:
             {
                 "startAt": start_at,
                 "maxResults": max_results,
-                "fields": f"key,summary,status,assignee,{STORY_POINTS_FIELD},created",
+                "fields": f"key,summary,status,assignee,{STORY_POINTS_FIELD},created,timeoriginalestimate,timespent",
                 "expand": "changelog"
             }
         )
@@ -200,6 +202,8 @@ def get_sprint_issues_with_changelog(sprint_id: int) -> list[Issue]:
                 assignee=assignee.get('displayName', 'Unassigned'),
                 assignee_key=assignee.get('key', 'unassigned'),
                 created=parse_datetime(fields.get('created')),
+                time_estimate=fields.get('timeoriginalestimate') or 0,
+                time_spent=fields.get('timespent') or 0,
                 changelog=histories
             )
             all_issues.append(issue)

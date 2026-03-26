@@ -148,65 +148,110 @@ def sum_story_points(issues: list[Issue]) -> float:
     return sum(i.story_points for i in issues)
 
 
+def sum_time_estimate(issues: list[Issue]) -> int:
+    """Сумма original estimate в секундах"""
+    return sum(i.time_estimate for i in issues)
+
+
+def sum_time_spent(issues: list[Issue]) -> int:
+    """Сумма time spent в секундах"""
+    return sum(i.time_spent for i in issues)
+
+
+def format_time(seconds: int) -> str:
+    """Форматирование времени из секунд в часы"""
+    if seconds == 0:
+        return "-"
+    hours = seconds / 3600
+    return f"{hours:.1f}h"
+
+
 def print_issues_table(issues: list[Issue], title: str):
     if not issues:
         print(f"\n  {title}: нет задач")
         return
     
     total_sp = sum_story_points(issues)
-    print(f"\n  {title} ({len(issues)} задач, {total_sp:.2f} SP):")
-    print(f"  {'─'*70}")
-    print(f"  {'Задача':<12} {'SP':>6}  {'Название':<50}")
-    print(f"  {'─'*70}")
+    total_estimate = sum_time_estimate(issues)
+    total_spent = sum_time_spent(issues)
+    
+    print(f"\n  {title} ({len(issues)} задач, {total_sp:.2f} SP, estimate: {format_time(total_estimate)}, spent: {format_time(total_spent)}):")
+    print(f"  {'─'*90}")
+    print(f"  {'Задача':<12} {'SP':>6} {'Est':>7} {'Spent':>7}  {'Название':<50}")
+    print(f"  {'─'*90}")
     
     for issue in sorted(issues, key=lambda x: x.key):
         summary = issue.summary[:47] + "..." if len(issue.summary) > 50 else issue.summary
-        print(f"  {issue.key:<12} {issue.story_points:>6.2f}  {summary:<50}")
+        est = format_time(issue.time_estimate)
+        spent = format_time(issue.time_spent)
+        print(f"  {issue.key:<12} {issue.story_points:>6.2f} {est:>7} {spent:>7}  {summary:<50}")
     
-    print(f"  {'─'*70}")
-    print(f"  {'ИТОГО':<12} {total_sp:>6.2f}")
+    print(f"  {'─'*90}")
+    print(f"  {'ИТОГО':<12} {total_sp:>6.2f} {format_time(total_estimate):>7} {format_time(total_spent):>7}")
 
 
 def print_report(stats_by_developer: dict[str, DeveloperStats], target_sprint: Sprint):
-    print("=" * 80)
+    print("=" * 90)
     print(f"ОТЧЕТ ПО СПРИНТУ: {target_sprint.name}")
     print(f"Период: {target_sprint.start_date.strftime('%Y-%m-%d')} - {target_sprint.end_date.strftime('%Y-%m-%d')}")
-    print("=" * 80)
+    print("=" * 90)
     
+    # Агрегаты по команде
     team_original_sp = 0
     team_added_later_sp = 0
     team_carried_over_sp = 0
     team_closed_planned_sp = 0
     team_closed_unplanned_sp = 0
     
+    team_original_est = 0
+    team_original_spent = 0
+    team_added_later_est = 0
+    team_added_later_spent = 0
+    team_carried_over_est = 0
+    team_carried_over_spent = 0
+    team_closed_planned_est = 0
+    team_closed_planned_spent = 0
+    team_closed_unplanned_est = 0
+    team_closed_unplanned_spent = 0
+    
     for dev_key, stats in sorted(stats_by_developer.items(), key=lambda x: x[1].name):
         if stats.name == "Unassigned":
             continue
             
-        print(f"\n{'━'*80}")
+        print(f"\n{'━'*90}")
         print(f"РАЗРАБОТЧИК: {stats.name}")
-        print(f"{'━'*80}")
+        print(f"{'━'*90}")
         
         print_issues_table(stats.original, "Планировались (original)")
         team_original_sp += sum_story_points(stats.original)
+        team_original_est += sum_time_estimate(stats.original)
+        team_original_spent += sum_time_spent(stats.original)
         
         print_issues_table(stats.added_later, "Не планировались (added_later)")
         team_added_later_sp += sum_story_points(stats.added_later)
+        team_added_later_est += sum_time_estimate(stats.added_later)
+        team_added_later_spent += sum_time_spent(stats.added_later)
         
         print_issues_table(stats.carried_over, "Переехали из предыдущих спринтов (carried_over)")
         team_carried_over_sp += sum_story_points(stats.carried_over)
+        team_carried_over_est += sum_time_estimate(stats.carried_over)
+        team_carried_over_spent += sum_time_spent(stats.carried_over)
         
         print_issues_table(stats.closed_planned, "Планировались и закрыты (closed_planned)")
         team_closed_planned_sp += sum_story_points(stats.closed_planned)
+        team_closed_planned_est += sum_time_estimate(stats.closed_planned)
+        team_closed_planned_spent += sum_time_spent(stats.closed_planned)
         
         print_issues_table(stats.closed_unplanned, "Не планировались, но закрыты (closed_unplanned)")
         team_closed_unplanned_sp += sum_story_points(stats.closed_unplanned)
+        team_closed_unplanned_est += sum_time_estimate(stats.closed_unplanned)
+        team_closed_unplanned_spent += sum_time_spent(stats.closed_unplanned)
     
     if 'unassigned' in stats_by_developer:
         stats = stats_by_developer['unassigned']
-        print(f"\n{'━'*80}")
+        print(f"\n{'━'*90}")
         print(f"БЕЗ ИСПОЛНИТЕЛЯ (Unassigned)")
-        print(f"{'━'*80}")
+        print(f"{'━'*90}")
         print_issues_table(stats.original, "Планировались")
         print_issues_table(stats.added_later, "Не планировались")
         
@@ -215,18 +260,23 @@ def print_report(stats_by_developer: dict[str, DeveloperStats], target_sprint: S
         team_carried_over_sp += sum_story_points(stats.carried_over)
         team_closed_planned_sp += sum_story_points(stats.closed_planned)
         team_closed_unplanned_sp += sum_story_points(stats.closed_unplanned)
+        
+        team_original_est += sum_time_estimate(stats.original)
+        team_original_spent += sum_time_spent(stats.original)
+        team_added_later_est += sum_time_estimate(stats.added_later)
+        team_added_later_spent += sum_time_spent(stats.added_later)
     
-    print(f"\n{'='*80}")
+    print(f"\n{'='*90}")
     print("ИТОГИ ПО КОМАНДЕ")
-    print(f"{'='*80}")
-    print(f"  {'Категория':<50} {'SP':>10}")
-    print(f"  {'-'*60}")
-    print(f"  {'Планировались (original)':<50} {team_original_sp:>10.2f}")
-    print(f"  {'Не планировались (added_later)':<50} {team_added_later_sp:>10.2f}")
-    print(f"  {'Переехали из предыдущих спринтов (carried_over)':<50} {team_carried_over_sp:>10.2f}")
-    print(f"  {'Планировались и закрыты (closed_planned)':<50} {team_closed_planned_sp:>10.2f}")
-    print(f"  {'Не планировались, но закрыты (closed_unplanned)':<50} {team_closed_unplanned_sp:>10.2f}")
-    print(f"  {'-'*60}")
+    print(f"{'='*90}")
+    print(f"  {'Категория':<50} {'SP':>10} {'Estimate':>10} {'Spent':>10}")
+    print(f"  {'-'*80}")
+    print(f"  {'Планировались (original)':<50} {team_original_sp:>10.2f} {format_time(team_original_est):>10} {format_time(team_original_spent):>10}")
+    print(f"  {'Не планировались (added_later)':<50} {team_added_later_sp:>10.2f} {format_time(team_added_later_est):>10} {format_time(team_added_later_spent):>10}")
+    print(f"  {'Переехали из предыдущих спринтов (carried_over)':<50} {team_carried_over_sp:>10.2f} {format_time(team_carried_over_est):>10} {format_time(team_carried_over_spent):>10}")
+    print(f"  {'Планировались и закрыты (closed_planned)':<50} {team_closed_planned_sp:>10.2f} {format_time(team_closed_planned_est):>10} {format_time(team_closed_planned_spent):>10}")
+    print(f"  {'Не планировались, но закрыты (closed_unplanned)':<50} {team_closed_unplanned_sp:>10.2f} {format_time(team_closed_unplanned_est):>10} {format_time(team_closed_unplanned_spent):>10}")
+    print(f"  {'-'*80}")
 
 
 # =============================================================================
